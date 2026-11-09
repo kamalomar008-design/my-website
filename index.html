@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدونة مدرسة القانون | منصة قانونية تفاعلية</title>
+    <!-- خطوط جوجل -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <!-- أيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- مكتبات الموقع (للرسوم المتحركة والاختبار) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        /* ================= الأنماط العامة ================= */
+        :root {
+            --bg-dark: #050B14;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --primary: #00F0FF;
+            --secondary: #7000FF;
+            --gold: #FFD700;
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --accent: #FF0055;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(112, 0, 255, 0.1), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.1), transparent 25%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* إخفاء الصفحات واظهار النشط فقط */
+        .global-page { display: none; opacity: 0; animation: fadeIn 0.5s ease forwards; flex: 1; }
+        .global-page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* شريط التنقل العلوي الرئيسي */
+        .main-nav {
+            background: rgba(5, 11, 20, 0.95);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky; top: 0; z-index: 2000;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.4rem; color: var(--gold); cursor: pointer; }
+        .brand i { color: var(--primary); }
+        
+        .nav-menu { display: flex; gap: 15px; }
+        .nav-menu a { color: var(--text-main); text-decoration: none; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.3s; padding: 5px 10px; border-radius: 5px; }
+        .nav-menu a:hover, .nav-menu a.active { color: var(--primary); background: rgba(0, 240, 255, 0.1); }
+
+        /* تذييل الصفحة */
+        footer { text-align: center; padding: 30px 20px; border-top: 1px solid var(--card-border); color: var(--text-muted); background: rgba(5, 11, 20, 0.9); margin-top: auto; z-index: 10;}
+        footer a { color: var(--text-muted); text-decoration: none; margin: 0 10px; transition: color 0.3s; font-weight: 600; cursor: pointer;}
+        footer a:hover { color: var(--primary); }
+
+        /* ================= أنماط الصفحة الرئيسية ================= */
+        .hero-section { text-align: center; padding: 70px 20px 40px; }
+        .hero-title { font-size: 3rem; font-weight: 900; background: linear-gradient(to right, var(--primary), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
+        .hero-subtitle { color: var(--text-muted); font-size: 1.2rem; max-width: 700px; margin: 0 auto; line-height: 1.8; }
+
+        .articles-container { max-width: 1200px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
+        .article-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; overflow: hidden; transition: all 0.4s ease; display: flex; flex-direction: column; }
+        .article-card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 15px 30px rgba(0, 240, 255, 0.1); }
+        .card-image { height: 160px; background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(112, 0, 255, 0.1)); display: flex; justify-content: center; align-items: center; font-size: 3.5rem; color: var(--gold); border-bottom: 1px solid var(--card-border); }
+        .card-content { padding: 25px; display: flex; flex-direction: column; flex: 1; }
+        .card-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 15px; }
+        .card-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.7; margin-bottom: 25px; flex: 1; }
+        .read-more-btn { display: inline-block; background: transparent; color: var(--primary); border: 1.5px solid var(--primary); padding: 10px 20px; border-radius: 50px; text-decoration: none; font-weight: 700; text-align: center; transition: all 0.3s ease; cursor: pointer; }
+        .read-more-btn:hover { background: var(--primary); color: #000; }
+
+        /* ================= أنماط الصفحات النصية (من نحن، الخصوصية) ================= */
+        .text-container { max-width: 800px; margin: 40px auto; background: var(--card-bg); padding: 40px; border-radius: 24px; border: 1px solid var(--card-border); }
+        .page-title { color: var(--primary); text-align: center; margin-bottom: 30px; font-size: 2.2rem; font-weight: 900; }
+        .page-title.gold { color: var(--gold); }
+        
+        /* تصميم الخانات المنسدلة */
+        details { background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); border-radius: 12px; margin-bottom: 15px; overflow: hidden; }
+        summary { padding: 20px; font-size: 1.1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 15px; list-style: none; color: var(--gold); }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: '\f107'; font-family: 'Font Awesome 6 Free'; font-weight: 900; margin-right: auto; transition: transform 0.3s ease; color: var(--primary); }
+        details[open] summary::after { transform: rotate(180deg); }
+        details[open] { background: rgba(0, 240, 255, 0.03); border-color: var(--primary); }
+        .details-content { padding: 0 20px 20px 20px; color: var(--text-muted); line-height: 1.8; font-size: 1rem; }
+        .details-content ul { padding-right: 20px; margin-top: 10px; }
+
+        /* ================= أنماط اتصل بنا ================= */
+        .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        .contact-box { background: var(--card-bg); padding: 30px; border-radius: 20px; border: 1px solid var(--card-border); }
+        .contact-box h3 { color: var(--primary); margin-bottom: 20px; text-align: center; }
+        .contact-form { display: flex; flex-direction: column; gap: 15px; }
+        .contact-form input, .contact-form textarea { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.4); color: white; font-family: inherit; }
+        .contact-form button { background: var(--primary); color: #000; border: none; padding: 15px; border-radius: 10px; font-weight: bold; font-family: inherit; cursor: pointer; transition: 0.3s; }
+        .contact-form button:hover { background: var(--gold); }
+
+        /* ================= أنماط صفحة المقال التفاعلي (procurement) ================= */
+        /* تم تعديل ألوان ومسافات لتتناسب مع الموقع الشامل */
+        .article-page-container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        .article-header { text-align: center; margin-bottom: 30px; }
+        .article-header h1 { font-size: 2.2rem; color: var(--gold); margin-bottom: 10px; }
+        .article-header p { color: var(--text-muted); }
+        
+        .bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; width: 100%; margin-bottom: 20px; }
+        .bento-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 25px; backdrop-filter: blur(12px); }
+        .item-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; font-size: 1.2rem; font-weight: 800; }
+        .icon-box { width: 45px; height: 45px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.3rem; }
+        .icon-blue { background: rgba(0, 240, 255, 0.1); color: var(--primary); }
+        .icon-gold { background: rgba(255, 215, 0, 0.1); color: var(--gold); }
+        .icon-purple { background: rgba(112, 0, 255, 0.1); color: #A78BFA; }
+        .col-span-4 { grid-column: span 4; } .col-span-6 { grid-column: span 6; } .col-span-8 { grid-column: span 8; } .col-span-12 { grid-column: span 12; }
+        .custom-list { list-style: none; } .custom-list li { margin-bottom: 12px; padding-right: 25px; position: relative; color: #CBD5E1; }
+        .custom-list li::before { content: '\f0da'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 0; color: var(--primary); }
+        
+        /* الجداول */
+        .table-container { width: 100%; overflow-x: auto; border-radius: 15px; border: 1px solid var(--card-border); }
+        table { width: 100%; border-collapse: collapse; text-align: right; min-width: 800px; }
+        th { background: rgba(112, 0, 255, 0.2); color: var(--gold); padding: 15px; font-weight: 800; border-bottom: 2px solid var(--card-border); }
+        td { padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #E2E8F0; }
+        tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
+
+        /* البطاقات (Flashcards) */
+        .flashcards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+        .flip-card { background-color: transparent; perspective: 1000px; height: 200px; cursor: pointer; }
+        .flip-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .flip-card-front { background: linear-gradient(135deg, #1E293B, #0F172A); border: 1px solid var(--card-border); color: var(--text-main); font-weight: 700; }
+        .flip-card-back { background: linear-gradient(135deg, var(--secondary), #4C1D95); color: white; transform: rotateY(180deg); }
+        
+        /* الاختبار */
+        .quiz-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; margin-top: 20px; }
+        .question-block { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .question-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; color: var(--gold); }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .option-label { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px 15px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .option-label:hover { background: rgba(255, 255, 255, 0.08); }
+        .option-label input { display: none; }
+        .option-label input:checked + .option-custom { background: var(--primary); border-color: var(--primary); }
+        .option-custom { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.3); display: inline-block; }
+        .btn-submit { background: linear-gradient(90deg, var(--primary), #00A8FF); color: #000; border: none; padding: 15px; font-size: 1.1rem; font-weight: 800; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 20px; }
+        .result-box { display: none; margin-top: 20px; padding: 20px; border-radius: 10px; text-align: center; font-weight: 700; }
+        .result-success { background: rgba(16, 185, 129, 0.2); color: #10B981; border: 1px solid #10B981; }
+        .result-error { background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444; }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.2rem; }
+            .articles-container { grid-template-columns: 1fr; }
+            .contact-grid { grid-template-columns: 1fr; }
+            .bento-grid { display: flex; flex-direction: column; }
+            .options-grid { grid-template-columns: 1fr; }
+            .main-nav { flex-direction: column; gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- شريط التنقل الرئيسي -->
+    <nav class="main-nav">
+        <div class="brand" onclick="showPage('home')">
+            <i class="fas fa-graduation-cap"></i> مدونة مدرسة القانون
+        </div>
+        <div class="nav-menu">
+            <a onclick="showPage('home')" id="nav-home" class="active">الرئيسية</a>
+            <a onclick="showPage('about')" id="nav-about">من نحن</a>
+            <a onclick="showPage('contact')" id="nav-contact">اتصل بنا</a>
+            <a onclick="showPage('privacy')" id="nav-privacy">سياسة الخصوصية</a>
+        </div>
+    </nav>
+
+    <!-- ================= 1. الصفحة الرئيسية ================= -->
+    <div id="page-home" class="global-page active">
+        <header class="hero-section">
+            <h1 class="hero-title">مرحباً بك في مدونة مدرسة القانون</h1>
+            <p class="hero-subtitle">منصتك الرقمية الشاملة لتبسيط وفهم القانون المغربي بأسلوب تفاعلي حديث يواكب تطورات العصر.</p>
+        </header>
+
+        <main class="articles-container">
+            <!-- بطاقة المقال -->
+            <article class="article-card">
+                <div class="card-image"><i class="fas fa-balance-scale"></i></div>
+                <div class="card-content">
+                    <h2 class="card-title">الدليل الشامل للصفقات العمومية</h2>
+                    <p class="card-desc">دليل تفاعلي شامل يغطي المبادئ العامة، المراحل، الآجال، طرق التقييم، والمقتضيات الخاصة بالصفقات العمومية.</p>
+                    <a onclick="showPage('procurement')" class="read-more-btn">قراءة المقال <i class="fas fa-arrow-left"></i></a>
+                </div>
+            </article>
+
+            <!-- بطاقة شروحات القوانين -->
+            <article class="article-card">
+                <div class="card-image" style="color: var(--secondary);"><i class="fas fa-gavel"></i></div>
+                <div class="card-content">
+                    <h2 class="card-title">شروحات القوانين</h2>
+                    <p class="card-desc">تبسيط للقوانين المغربية، المدونات، والنصوص التنظيمية بأسلوب سلس وسهل الفهم لجميع الطلبة.</p>
+                    <a href="#" class="read-more-btn" style="border-color: var(--secondary); color: var(--secondary);">تصفح القسم (قريباً)</a>
+                </div>
+            </article>
+
+            <!-- بطاقة مواضيع جامعة -->
+            <article class="article-card">
+                <div class="card-image" style="color: #10B981;"><i class="fas fa-book-open"></i></div>
+                <div class="card-content">
+                    <h2 class="card-title">مواضيع جامعة</h2>
+                    <p class="card-desc">ملخصات شاملة، مطويات، وبحوث قانونية تجمع لك أهم المعلومات في مكان واحد لتحضير ممتاز.</p>
+                    <a href="#" class="read-more-btn" style="border-color: #10B981; color: #10B981;">تصفح القسم (قريباً)</a>
+                </div>
+            </article>
+
+            <!-- بطاقة اليوتيوب -->
+            <article class="article-card">
+                <div class="card-image" style="color: #FF0000;"><i class="fab fa-youtube"></i></div>
+                <div class="card-content">
+                    <h2 class="card-title">قناتنا على اليوتيوب</h2>
+                    <p class="card-desc">شروحات مرئية، مراجعات سريعة، ونصائح قانونية عبر قناتنا الرسمية. اشترك الآن لدعمنا!</p>
+                    <a href="#" target="_blank" class="read-more-btn" style="border-color: #FF0000; color: #FF0000;">زيارة القناة</a>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <!-- ================= 2. صفحة المقال (التفاعلي) ================= -->
+    <div id="page-procurement" class="global-page">
+        <div class="article-page-container">
+            
+            <div class="article-header">
+                <h1>الدليل الشامل للصفقات العمومية بوزارة العدل</h1>
+                <p>مديرية التجهيز وتدبير الممتلكات - مرسوم 2.22.431</p>
+                <button onclick="showPage('home')" class="read-more-btn" style="margin-top: 15px; font-size: 0.9rem;"><i class="fas fa-arrow-right"></i> العودة للرئيسية</button>
+            </div>
+
+            <!-- المحتوى التفاعلي (مأخوذ من كودك الأصلي) -->
+            <div class="bento-item col-span-12">
+                <div class="item-header">
+                    <div class="icon-box icon-blue"><i class="fas fa-bullseye"></i></div>
+                    المبادئ الخمسة الأساسية
+                </div>
+                <div class="bento-grid" style="margin-bottom: 0; gap: 10px;">
+                    <div class="col-span-4" style="padding: 10px; background: rgba(0,240,255,0.05); border-radius: 10px; text-align: center;">1. ترسيخ الشفافية</div>
+                    <div class="col-span-4" style="padding: 10px; background: rgba(112,0,255,0.05); border-radius: 10px; text-align: center;">2. المساواة بين المتنافسين</div>
+                    <div class="col-span-4" style="padding: 10px; background: rgba(255,215,0,0.05); border-radius: 10px; text-align: center;">3. ضمان حقوق المتنافسين</div>
+                    <div class="col-span-6" style="padding: 10px; background: rgba(16,185,129,0.05); border-radius: 10px; text-align: center;">4. حرية الولوج إلى الطلبيات</div>
+                    <div class="col-span-6" style="padding: 10px; background: rgba(239,68,68,0.05); border-radius: 10px; text-align: center;">5. النزاهة والحكامة الجيدة</div>
+                </div>
+            </div>
+
+            <div class="bento-item col-span-12" style="margin-top: 20px;">
+                <div class="item-header" style="color: var(--gold);">
+                    <div class="icon-box icon-gold"><i class="fas fa-info-circle"></i></div>
+                    الإطار القانوني (أهم المراسيم)
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>النص القانوني</th><th>الرقم</th><th>التاريخ</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>مرسوم الصفقات العمومية</td><td class="law-num">2.22.431</td><td class="law-date">8 مارس 2023</td></tr>
+                            <tr><td>قرار الوزير المنتدب (الرقمنة)</td><td class="law-num">1692.23</td><td class="law-date">23 يونيو 2023</td></tr>
+                            <tr><td>مرسوم الشروط الإدارية العامة (أشغال)</td><td class="law-num">2.14.394</td><td class="law-date">13 مايو 2016</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- البطاقات -->
+            <h2 style="text-align: center; margin-top: 40px; color: var(--primary);">بطاقات الاستذكار (انقر لرؤية الإجابة)</h2>
+            <div class="flashcards-grid">
+                <div class="flip-card" onclick="this.classList.toggle('flipped')"><div class="flip-card-inner"><div class="flip-card-front">ما هو المرسوم المنظم للصفقات العمومية؟</div><div class="flip-card-back">المرسوم <strong>2.22.431</strong> (8 مارس 2023).</div></div></div>
+                <div class="flip-card" onclick="this.classList.toggle('flipped')"><div class="flip-card-inner"><div class="flip-card-front">ما هو حد سندات الطلب؟</div><div class="flip-card-back"><strong>500.000 درهم</strong> مع احتساب الرسوم.</div></div></div>
+                <div class="flip-card" onclick="this.classList.toggle('flipped')"><div class="flip-card-inner"><div class="flip-card-front">ما هي نسبة الضمان المؤقت؟</div><div class="flip-card-back">لا يتجاوز <strong>2%</strong> من المبلغ التقديري.</div></div></div>
+                <div class="flip-card" onclick="this.classList.toggle('flipped')"><div class="flip-card-inner"><div class="flip-card-front">ما هي نسبة الأفضلية الوطنية؟</div><div class="flip-card-back">تخفيض أو زيادة بنسبة <strong>15%</strong>.</div></div></div>
+            </div>
+
+            <!-- الاختبار -->
+            <h2 style="text-align: center; margin-top: 40px; color: var(--gold);">اختبر معلوماتك</h2>
+            <div class="quiz-card">
+                <form id="quizForm">
+                    <div class="question-block">
+                        <div class="question-title">1. من هو صاحب المشروع لصفقات التوريدات على المستوى اللاممركز؟</div>
+                        <div class="options-grid">
+                            <label class="option-label"><input type="radio" name="q1" value="a"><span class="option-custom"></span> مدير الميزانية</label>
+                            <label class="option-label"><input type="radio" name="q1" value="b"><span class="option-custom"></span> المدير الإقليمي للعدل</label>
+                        </div>
+                    </div>
+                    <div class="question-block">
+                        <div class="question-title">2. ما هو أجل تبليغ المصادقة إلى نائل الصفقة؟</div>
+                        <div class="options-grid">
+                            <label class="option-label"><input type="radio" name="q2" value="a"><span class="option-custom"></span> 15 يوماً</label>
+                            <label class="option-label"><input type="radio" name="q2" value="b"><span class="option-custom"></span> 60 يوماً</label>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-submit" onclick="evaluateQuiz()">تصحيح الإجابات</button>
+                </form>
+                <div id="resultBox" class="result-box"></div>
+            </div>
+            <br><br>
+        </div>
+    </div>
+
+    <!-- ================= 3. صفحة من نحن ================= -->
+    <div id="page-about" class="global-page">
+        <div class="text-container">
+            <h1 class="page-title">من نحن</h1>
+            
+            <details open>
+                <summary><i class="fas fa-university"></i> نبذة عن مدونة مدرسة القانون</summary>
+                <div class="details-content">
+                    <p>مرحباً بك في <strong>مدونة مدرسة القانون</strong>، منصتك الرقمية المتخصصة في تبسيط وتقريب القانون المغربي لجميع الفاعلين والمهتمين. نحن نسعى لأن نكون الجسر الذي يربط بين تعقيد النصوص القانونية وسهولة الفهم للطالب والمهني والمواطن العادي.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary><i class="fas fa-eye"></i> رؤيتنا</summary>
+                <div class="details-content">
+                    <p>أن نكون المرجع الرقمي الأول والأكثر موثوقية للطلبة والباحثين في مجال القانون بالمغرب، من خلال تقديم محتوى قانوني دقيق، محدث، ومبسط بأحدث التقنيات التفاعلية.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary><i class="fas fa-bullseye"></i> رسالتنا وأهدافنا</summary>
+                <div class="details-content">
+                    <ul>
+                        <li>تسهيل فهم المراسيم والقوانين (مثل الصفقات العمومية، القوانين التنظيمية، والمدونات).</li>
+                        <li>توفير أدوات تفاعلية (بطاقات استذكار، اختبارات، خرائط ذهنية) تسهل عملية الحفظ والمراجعة.</li>
+                        <li>مواكبة التطور الرقمي في المجال القانوني والإداري.</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <!-- ================= 4. صفحة اتصل بنا ================= -->
+    <div id="page-contact" class="global-page">
+        <div class="contact-grid">
+            <div class="contact-box">
+                <h3>أرسل لنا رسالة</h3>
+                <form class="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+                    <input type="text" name="name" placeholder="الاسم الكامل" required>
+                    <input type="email" name="email" placeholder="البريد الإلكتروني" required>
+                    <textarea name="message" rows="5" placeholder="رسالتك هنا..." required></textarea>
+                    <button type="submit">إرسال الرسالة <i class="fas fa-paper-plane"></i></button>
+                </form>
+            </div>
+            <div class="contact-box">
+                <h3>الأسئلة الشائعة</h3>
+                <details open>
+                    <summary>هل المحتوى مجاني؟</summary>
+                    <div class="details-content">نعم، جميع المقالات، الشروحات، والاختبارات المتوفرة على الموقع مجانية بالكامل لجميع الزوار.</div>
+                </details>
+                <details>
+                    <summary>من يمكنه استعمال الموقع؟</summary>
+                    <div class="details-content">الموقع موجه لطلبة كليات الحقوق، الباحثين، المهنيين، وأي شخص مهتم بفهم القانون المغربي.</div>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 5. صفحة سياسة الخصوصية ================= -->
+    <div id="page-privacy" class="global-page">
+        <div class="text-container">
+            <h1 class="page-title gold">سياسة الخصوصية</h1>
+            <p style="text-align:center; color: var(--text-muted); margin-bottom: 30px;">آخر تحديث: نوفمبر 2026</p>
+            
+            <details open>
+                <summary><i class="fas fa-info-circle"></i> 1. مقدمة</summary>
+                <div class="details-content">
+                    <p>في <strong>مدونة مدرسة القانون</strong>، نولي أهمية قصوى لخصوصية زوارنا. توضح سياسة الخصوصية هذه كيفية جمعنا واستخدامنا وحمايتنا لمعلوماتك عند زيارة موقعنا.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary><i class="fas fa-cookie-bite"></i> 2. ملفات تعريف الارتباط (Cookies)</summary>
+                <div class="details-content">
+                    <p>يستخدم موقعنا ملفات تعريف الارتباط لتحسين تجربة التصفح. هذه الملفات هي بيانات صغيرة يتم تخزينها على جهازك وتساعدنا على فهم كيفية تفاعل الزوار مع الموقع، وتذكر تفضيلاتك.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary><i class="fab fa-google"></i> 3. إعلانات الطرف الثالث (Google AdSense)</summary>
+                <div class="details-content">
+                    <p>نستخدم شركات إعلانية خارجية مثل <strong>Google AdSense</strong> لعرض الإعلانات عند زيارة موقعنا.</p>
+                    <ul>
+                        <li>قد تستخدم شركة Google ملفات تعريف الارتباط لعرض إعلانات مبنية على زياراتك السابقة لموقعنا أو مواقع أخرى.</li>
+                        <li>يمكن للمستخدمين إلغاء الاشتراك في استخدام ملف تعريف ارتباط DART بزيارة سياسة الخصوصية الخاصة بإعلانات Google.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <details>
+                <summary><i class="fas fa-server"></i> 4. ملفات سجل الخادم (Log Files)</summary>
+                <div class="details-content">
+                    <p>مثل العديد من المواقع الأخرى، يستخدم موقعنا ملفات السجل. المعلومات داخل ملفات السجل تشمل عناوين IP، نوع المتصفح، مزود خدمة الإنترنت، ختم التاريخ والوقت. تُستخدم لتحليل الاتجاهات وإدارة الموقع.</p>
+                </div>
+            </details>
+
+            <details>
+                <summary><i class="fas fa-check-circle"></i> 5. الموافقة والتحديثات</summary>
+                <div class="details-content">
+                    <p>باستخدامك لهذا الموقع، فإنك توافق على سياسة الخصوصية الخاصة بنا. نحتفظ بالحق في تحديث أو تعديل سياسة الخصوصية في أي وقت.</p>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <!-- تذييل الصفحة (يعمل في كل الصفحات) -->
+    <footer>
+        <p>&copy; 2026 مدونة مدرسة القانون. جميع الحقوق محفوظة.</p>
+        <div style="margin-top: 10px;">
+            <a onclick="showPage('about')">من نحن</a> | 
+            <a onclick="showPage('contact')">اتصل بنا</a> | 
+            <a onclick="showPage('privacy')">سياسة الخصوصية</a>
+        </div>
+    </footer>
+
+    <!-- ================= السكربتات (البرمجة) ================= -->
+    <script>
+        // 1. دالة التنقل بين الصفحات
+        function showPage(pageId) {
+            // إخفاء كل الصفحات
+            document.querySelectorAll('.global-page').forEach(page => {
+                page.classList.remove('active');
+            });
+            // إظهار الصفحة المطلوبة
+            document.getElementById('page-' + pageId).classList.add('active');
+            
+            // تحديث شكل أزرار القائمة العلوية
+            document.querySelectorAll('.nav-menu a').forEach(link => {
+                link.classList.remove('active');
+            });
+            const activeNav = document.getElementById('nav-' + pageId);
+            if(activeNav) activeNav.classList.add('active');
+
+            // العودة لأعلى الصفحة عند التنقل
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 2. دالة تصحيح الاختبار
+        function evaluateQuiz() {
+            const form = document.getElementById('quizForm');
+            const resultBox = document.getElementById('resultBox');
+            
+            // الإجابات الصحيحة
+            const answers = { q1: 'b', q2: 'b' }; 
+            const formData = new FormData(form);
+            let score = 0;
+            let answeredAll = true;
+
+            // التحقق من الإجابة على الكل
+            for (let i = 1; i <= 2; i++) {
+                if(formData.getAll('q' + i).length === 0) answeredAll = false;
+            }
+
+            if (!answeredAll) {
+                resultBox.style.display = 'block';
+                resultBox.className = 'result-box result-error';
+                resultBox.innerHTML = 'الرجاء الإجابة على جميع الأسئلة أولاً!';
+                return;
+            }
+
+            // حساب النتيجة
+            for (let [name, value] of formData.entries()) {
+                if (answers[name] === value) score++;
+            }
+
+            resultBox.style.display = 'block';
+            resultBox.className = score === 2 ? 'result-box result-success' : 'result-box result-error';
+            resultBox.innerHTML = `لقد أجبت بشكل صحيح على ${score} من أصل 2 أسئلة.`;
+            
+            // تأثير الاحتفال
+            if (score === 2 && typeof confetti === 'function') {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+        }
+    </script>
+</body>
+</html>
